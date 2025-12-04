@@ -65,11 +65,18 @@ static inline volatile uint32_t* IO_MUX_REG_PTR(uint8_t gpio)
 
 /* GPIOs para válvulas (salidas - conectar a relés) */
 #define VALVE_A_GPIO    2    /* Válvula Bebida A (Coca Cola) */
-#define VALVE_B_GPIO    3    /* Válvula Bebida B (Sprite) */
+#define VALVE_B_GPIO    3    /* Válvula Bebida B (Sprite) */  
+#define VALVE_C_GPIO    18   /* Válvula Bebida C (Fanta) */
+
+/* GPIOs para LEDs indicadores (salidas) */
+#define LED_A_GPIO      8    /* LED Bebida A */
+#define LED_B_GPIO      9    /* LED Bebida B */
+#define LED_C_GPIO      19   /* LED Bebida C */
 
 /* GPIOs para botones (entradas con pull-up) */
 #define BOTON_A_GPIO    5    /* Botón Bebida A */
 #define BOTON_B_GPIO    6    /* Botón Bebida B */
+#define BOTON_C_GPIO    7    /* Botón Bebida C */
 
 /* Configuración de timing */
 #define CPU_FREQ_MHZ 160              /* Frecuencia CPU en MHz */
@@ -242,26 +249,31 @@ int main(void) {
     /* Configurar GPIOs como salidas (solo válvulas) */
     configurar_gpio_salida(VALVE_A_GPIO);
     configurar_gpio_salida(VALVE_B_GPIO);
+    configurar_gpio_salida(VALVE_C_GPIO);
 
     /* Configurar GPIOs como entradas con pull-up (botones) */
     configurar_gpio_entrada(BOTON_A_GPIO);
     configurar_gpio_entrada(BOTON_B_GPIO);
+    configurar_gpio_entrada(BOTON_C_GPIO);
 
     /* Inicializar válvulas en OFF */
     gpio_clear(VALVE_A_GPIO);
     gpio_clear(VALVE_B_GPIO);
+    gpio_clear(VALVE_C_GPIO);
 
     uart_puts("Hardware configurado. Sistema listo!\r\n\r\n");
 
     /* Estados anteriores para detección de cambios */
     uint8_t boton_A_anterior = 1;  /* Pull-up: no presionado = 1 */
     uint8_t boton_B_anterior = 1;
+    uint8_t boton_C_anterior = 1;
 
     /* Bucle infinito: control directo de válvulas por botones */
     while (1) {
         /* Leer estado actual de botones */
         uint8_t boton_A_actual = gpio_read(BOTON_A_GPIO);
         uint8_t boton_B_actual = gpio_read(BOTON_B_GPIO);
+        uint8_t boton_C_actual = gpio_read(BOTON_C_GPIO);
 
         /* Control Botón A -> Válvula A */
         if (boton_A_actual == 0) {  /* Presionado (pull-up: 0 = presionado) */
@@ -289,9 +301,23 @@ int main(void) {
             }
         }
 
+        /* Control Botón C -> Válvula C */
+        if (boton_C_actual == 0) {  /* Presionado */
+            if (boton_C_anterior == 1) {
+                uart_puts("FANTA: Valvula ON\r\n");
+                gpio_set(VALVE_C_GPIO);
+            }
+        } else {  /* No presionado */
+            if (boton_C_anterior == 0) {
+                uart_puts("FANTA: Valvula OFF\r\n");
+                gpio_clear(VALVE_C_GPIO);
+            }
+        }
+
         /* Actualizar estados anteriores */
         boton_A_anterior = boton_A_actual;
         boton_B_anterior = boton_B_actual;
+        boton_C_anterior = boton_C_actual;
 
         /* Delay para polling eficiente */
         delay(POLLING_CYCLES);
