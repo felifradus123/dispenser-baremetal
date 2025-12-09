@@ -1,92 +1,88 @@
 /*
  * main.c - Lógica de dispensador, versión bare-metal, sin defines ni librerías estándar.
- * Todo está comentado y explícito.
  * UART implementada a mano, sin printf ni Arduino.
  */
 
 #include <stdint.h>
 
-// --- Direcciones base de periféricos ---
-// GPIO: 0x60004000
-// UART0: 0x60000000
-// ADC:   0x60040000
-
-// --- Pines usados ---
-// int PIN_LDR = 0;      // LDR para detectar vaso
-// int PIN_POT = 1;      // Potenciómetro para seleccionar bebida
-// int PIN_LED = 10;     // LED de selección
-// int PIN_BUTTON = 19;  // Botón para dispensar
-// int PIN_RELAY_A = 4;  // Relé bebida A
-// int PIN_RELAY_B = 5;  // Relé bebida B
-// int PIN_TANK_SENSOR = 9; // Sensor de nivel de tanque
-
-// --- Estados de la máquina ---
-// enum State { WAIT_CUP, SELECT_DRINK, DISPENSE };
-// State state = WAIT_CUP;
-// bool cupPresent = false;
-// bool drinkSelected = false;
-// int drink = 0; // 0 = A, 1 = B
-
-// --- UART mínimo ---
-static void uart_init(void) {
-    // Configurar divisor de baudrate, pines, etc. (no implementado)
-}
-static void uart_putc(char c) {
-    // Escribir en FIFO TX de UART0 (no implementado)
-    (void)c;
-}
-static void uart_puts(const char *s) {
-    while (*s) uart_putc(*s++);
-}
+// --- UART mínimo (simulado, sin implementación real) ---
+static void uart_init(void) {}
+static void uart_putc(char c) { (void)c; }
+static void uart_puts(const char *s) { while (*s) uart_putc(*s++); }
 
 // --- Delay simple ---
-static void delay(uint32_t n) {
-    while (n--) {
-        __asm__ volatile ("nop");
-    }
-}
+static void delay(uint32_t n) { while (n--) { __asm__ volatile ("nop"); } }
 
 int main(void) {
     uart_init();
-    // Configurar pines como entrada/salida según corresponda (no implementado)
-    // Inicializar estados
-    // state = WAIT_CUP;
-    // cupPresent = false;
-    // drinkSelected = false;
-    // drink = 0;
+
+    // Variables de estado
+    int state = 0; // 0=WAIT_CUP, 1=SELECT_DRINK, 2=DISPENSE
+    int cupPresent = 0;
+    int drink = 0; // 0 = A, 1 = B
+    int ldrValue = 0;
+    int potValue = 0;
+    int buttonPressed = 0;
+    int tankOK = 1;
 
     while (1) {
-        // int ldrValue = ...; // Leer ADC para LDR (no implementado)
-        // int potValue = ...; // Leer ADC para potenciómetro (no implementado)
-        // bool buttonPressed = ...; // Leer GPIO botón (no implementado)
-        // bool tankOK = ...; // Leer GPIO sensor de tanque (no implementado)
+        // Simulación de lecturas (en uso real serían registros de hardware)
+        ldrValue = 1500;      // Simula vaso presente
+        potValue = 3000;      // Simula potenciómetro en bebida B
+        buttonPressed = 1;    // Simula botón presionado
+        tankOK = 1;           // Simula tanque lleno
 
-        // cupPresent = (ldrValue < 2000);
+        cupPresent = (ldrValue < 2000);
 
-        // switch (state) {
-        //     case WAIT_CUP:
-        //         // Apagar relés
-        //         // if (cupPresent) state = SELECT_DRINK;
-        //         break;
-        //     case SELECT_DRINK:
-        //         // Interpretar potenciómetro
-        //         // if (potValue < 2048) { drink = 0; /* LED off */ }
-        //         // else { drink = 1; /* LED on */ }
-        //         // if (!cupPresent) break;
-        //         // if (buttonPressed && tankOK) state = DISPENSE;
-        //         break;
-        //     case DISPENSE:
-        //         // if (!cupPresent) { /* Apagar relés, volver a WAIT_CUP */ break; }
-        //         // if (drink == 0) { /* Relé A on, B off */ }
-        //         // else { /* Relé A off, B on */ }
-        //         // if (!buttonPressed) { /* Apagar relés, volver a SELECT_DRINK */ }
-        //         break;
-        // }
+        switch (state) {
+            case 0: // WAIT_CUP
+                // Apagar relés (no implementado)
+                if (cupPresent) {
+                    state = 1; // SELECT_DRINK
+                }
+                break;
+            case 1: // SELECT_DRINK
+                if (potValue < 2048) {
+                    drink = 0; // Bebida A
+                    // Apagar LED (no implementado)
+                } else {
+                    drink = 1; // Bebida B
+                    // Encender LED (no implementado)
+                }
+                if (!cupPresent) {
+                    state = 0; // WAIT_CUP
+                    break;
+                }
+                if (buttonPressed && tankOK) {
+                    state = 2; // DISPENSE
+                }
+                break;
+            case 2: // DISPENSE
+                if (!cupPresent) {
+                    // Apagar relés (no implementado)
+                    state = 0; // WAIT_CUP
+                    break;
+                }
+                if (drink == 0) {
+                    // Relé A on, B off (no implementado)
+                } else {
+                    // Relé A off, B on (no implementado)
+                }
+                if (!buttonPressed) {
+                    // Apagar relés (no implementado)
+                    state = 1; // SELECT_DRINK
+                }
+                break;
+        }
 
-        // uart_puts("Tanque 1: ");
-        // uart_puts(tankOK ? "Lleno\n" : "Vacio\n");
-        // uart_puts("Tanque 2: Vacio\n");
-        // uart_puts("Tanque 3: Lleno\n");
+        uart_puts("Tanque 1: ");
+        if (tankOK) {
+            uart_puts("Lleno\n");
+        } else {
+            uart_puts("Vacio\n");
+        }
+        uart_puts("Tanque 2: Vacio\n");
+        uart_puts("Tanque 3: Lleno\n");
 
         delay(10000); // Simula delay(10)
     }
