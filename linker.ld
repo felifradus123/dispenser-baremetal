@@ -103,3 +103,36 @@ SECTIONS
         *(.gnu.attributes)
     }
 }
+ENTRY(_start)
+MEMORY {
+    IROM (rx)  : ORIGIN = 0x42000000, LENGTH = 2M
+    DRAM (rwx) : ORIGIN = 0x3FC80000, LENGTH = 400K
+}
+SECTIONS {
+    .text : {
+        _stext = .;
+        *(.init)
+        *(.text*)
+        *(.rodata*)
+        . = ALIGN(4);
+        _etext = .;
+    } > IROM
+    .data : AT (LOADADDR(.text) + SIZEOF(.text)) {
+        . = ALIGN(4);
+        _sdata = .;
+        *(.data*)
+        . = ALIGN(4);
+        _edata = .;
+    } > DRAM
+    .bss (NOLOAD) : {
+        . = ALIGN(8);
+        _sbss = .;
+        *(.bss*)
+        *(COMMON)
+        . = ALIGN(8);
+        _ebss = .;
+    } > DRAM
+    _stack_top = ORIGIN(DRAM) + LENGTH(DRAM);
+    _sheap = _ebss;
+    _eheap = _stack_top - 0x2000;
+}

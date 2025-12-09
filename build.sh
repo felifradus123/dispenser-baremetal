@@ -91,3 +91,15 @@ echo "  BIN: $BUILD_DIR/${PROJECT_NAME}.bin"
 echo ""
 echo "Para flashear:"
 echo "  ./flash.sh"
+#!/usr/bin/env bash
+set -e
+TARGET=app
+BUILD_DIR=build
+mkdir -p $BUILD_DIR
+riscv32-esp-elf-gcc -Os -march=rv32imc -mabi=ilp32 -ffreestanding -nostdlib -Wall -Wextra -Iinclude -c src/startup.S -o $BUILD_DIR/startup.o
+riscv32-esp-elf-gcc -Os -march=rv32imc -mabi=ilp32 -ffreestanding -nostdlib -Wall -Wextra -Iinclude -c src/main.c -o $BUILD_DIR/main.o
+riscv32-esp-elf-gcc -T linker.ld -nostdlib -nostartfiles $BUILD_DIR/startup.o $BUILD_DIR/main.o -o $BUILD_DIR/$TARGET.elf -Wl,-Map=$BUILD_DIR/$TARGET.map
+riscv32-esp-elf-objcopy -O binary $BUILD_DIR/$TARGET.elf $BUILD_DIR/$TARGET.bin
+esptool.py --chip esp32c3 elf2image $BUILD_DIR/$TARGET.elf --output $BUILD_DIR/image
+riscv32-esp-elf-size $BUILD_DIR/$TARGET.elf
+ls -1 $BUILD_DIR
